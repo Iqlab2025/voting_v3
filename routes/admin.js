@@ -9,7 +9,10 @@ const {
     addVoters, 
     addCandidate, 
     getLiveVotes, 
-    getResults 
+    getResults,
+    getAllElections,
+    getElectionDetails,
+    addVotersBulk
 } = require('../controllers/adminController');
 
 // Login route
@@ -32,5 +35,11 @@ router.get('/votes/:electionId', getLiveVotes);
 
 // Results
 router.get('/results/:electionId', getResults);
+router.get("/elections", adminAuth, getAllElections); // list all elections
+router.get("/elections/:id", adminAuth, getElectionDetails); // view details of one election
+// routes/adminRoutes.js
+router.post('/voters/bulk/:electionId', adminAuth, addVotersBulk);
+
+
 
 module.exports = router;

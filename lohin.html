@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Login Test</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    background-color: #f0f0f0;
+  }
+  .login-container {
+    background: #fff; 
+    padding: 20px; 
+    border-radius: 8px; 
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    width: 300px;
+  }
+  input[type="text"], input[type="password"] {
+    width: 100%; 
+    padding: 10px; 
+    margin: 8px 0; 
+    border: 1px solid #ccc; 
+    border-radius: 4px;
+  }
+  button {
+    width: 100%; 
+    padding: 10px; 
+    background-color: #007bff; 
+    border: none; 
+    color: white; 
+    font-size: 16px; 
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #0056b3;
+  }
+</style>
+</head>
+<body>
+<div class="login-container">
+  <h2>Admin Login</h2>
+  <form id="loginForm">
+    <label for="username">Username:</label>
+    <input type="text" id="username" placeholder="Enter username" required />
+    
+    <label for="password">Password:</label>
+    <input type="password" id="password" placeholder="Enter password" required />
+    
+    <button type="submit">Login</button>
+  </form>
+</div>
+
+<script>
+  async function performLogin(event) {
+    event.preventDefault();
+
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+
+    const payload = {
+      username: username,
+      password: password
+    };
+
+    try {
+      const response = await fetch('http://config.identiqalabs.com/api/admin/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        alert('Login successful! Token: ' + data.token);
+      } else {
+        alert('Login failed: ' + data.message);
+      }
+    } catch (error) {
+      alert('Error: ' + error.message);
+    }
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', performLogin);
+</script>
+</body>
+</html>

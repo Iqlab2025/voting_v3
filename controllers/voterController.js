@@ -4,6 +4,30 @@ const Vote = require('../models/Vote');
 const Candidate = require('../models/Candidate');
 const Election = require('../models/Election');
 
+
+
+const voterDashboard = async (req, res) => {
+  try {
+    const voter = await Voter.findById(req.voter._id).populate("election");
+    if (!voter) return res.status(404).json({ message: "Voter not found" });
+
+    const candidates = await Candidate.find({ election: voter.election._id }).select("name votes");
+
+    res.json({
+      name: voter.name,
+      hasVoted: voter.hasVoted,
+      electionName: voter.election ? voter.election.name : "N/A",
+      candidates
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error fetching voter dashboard", error: err.message });
+  }
+};
+
+module.exports = { voterDashboard };
+
+
 // Voter login
 const voterLogin = async (req, res) => {
     const { phone, password } = req.body;
@@ -74,3 +98,32 @@ const castVote = async (req, res) => {
 };
 
 module.exports = { voterLogin, castVote };
+
+
+
+// View election results
+const viewResults = async (req, res) => {
+    const voter = req.voter;
+
+    try {
+        const election = await Election.findById(voter.election);
+        if (!election) return res.status(404).json({ message: 'Election not found' });
+
+        const now = new Date();
+        if (now < new Date(election.endDate)) {
+            return res.status(403).json({ message: 'Results are not available until election ends' });
+        }
+
+        const candidates = await Candidate.find({ election: election._id })
+            .select('name votes')
+            .sort({ votes: -1 });
+
+        res.json({ election: election.name, results: candidates });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Error fetching results', error: err.message });
+    }
+};
+
+module.exports = { voterLogin, castVote, viewResults, voterDashboard };
+

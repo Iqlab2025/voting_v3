@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-
-const { voterLogin, castVote } = require('../controllers/voterController');
+const { voterLogin, castVote, viewResults, voterDashboard } = require('../controllers/voterController');
 const voterAuth = require('../middleware/voterAuth');
 
 router.post('/login', voterLogin);
@@ -9,11 +8,12 @@ router.post('/login', voterLogin);
 // Protected voter routes
 router.use(voterAuth);
 
-router.get('/dashboard', (req, res) => {
-    res.json({ message: `Welcome ${req.voter.name}!`, election: req.voter.election });
-});
+router.get('/dashboard', voterAuth, voterDashboard);
 
 // Cast vote
 router.post('/vote', castVote);
+
+// View results
+router.get('/results', viewResults);
 
 module.exports = router;

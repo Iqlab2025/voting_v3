@@ -19,6 +19,7 @@ const adminLogin = (req, res) => {
 module.exports = { adminLogin };
 
 
+
 // Create election
 const createElection = async (req, res) => {
     const { name, startDate, endDate } = req.body;
@@ -34,6 +35,65 @@ const createElection = async (req, res) => {
         console.error(err);
         res.status(500).json({ message: 'Error creating election', error: err.message });
     }
+};
+
+// 🟢 GET /api/admin/elections — List all elections
+const getAllElections = async (req, res) => {
+  try {
+    const elections = await Election.find().sort({ startDate: -1 });
+
+    const now = new Date();
+
+    const data = elections.map((el) => {
+      let status = "upcoming";
+      if (now >= el.startDate && now <= el.endDate) status = "active";
+      else if (now > el.endDate) status = "ended";
+
+      return {
+        _id: el._id,
+        name: el.name,
+        startDate: el.startDate,
+        endDate: el.endDate,
+        status,
+      };
+    });
+
+    res.json(data);
+  } catch (error) {
+    console.error("Error fetching elections:", error);
+    res.status(500).json({ message: "Failed to fetch elections" });
+  }
+};
+
+// 🟢 GET /api/admin/elections/:id — View details of a specific election
+const getElectionDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const election = await Election.findById(id);
+    if (!election) return res.status(404).json({ message: "Election not found" });
+
+    const voters = await Voter.find({ election: id }).select("-__v -_id -election");
+    const candidates = await Candidate.find({ election: id }).select("-__v -_id -election");
+
+    const now = new Date();
+    let status = "upcoming";
+    if (now >= election.startDate && now <= election.endDate) status = "active";
+    else if (now > election.endDate) status = "ended";
+
+    res.json({
+      _id: election._id,
+      name: election.name,
+      startDate: election.startDate,
+      endDate: election.endDate,
+      status,
+      voters,
+      candidates,
+    });
+  } catch (error) {
+    console.error("Error fetching election details:", error);
+    res.status(500).json({ message: "Failed to fetch election details" });
+  }
 };
 
 // Add voters
@@ -133,5 +193,57 @@ const getResults = async (req, res) => {
     }
 };
 
-module.exports = { adminLogin, createElection, addVoters, addCandidate, getLiveVotes, getResults };
+// Bulk Add Voters
+const addVotersBulk = async (req, res) => {
+  try {
+    const { electionId } = req.params;
+    const { voters } = req.body;
+
+    if (!voters || !Array.isArray(voters) || voters.length === 0) {
+      return res.status(400).json({ message: 'Voter list required.' });
+    }
+
+    // Check election existence
+    const election = await Election.findById(electionId);
+    if (!election) {
+      return res.status(404).json({ message: 'Election not found.' });
+    }
+
+    const newVoters = voters.map(v => {
+      const password =
+        v.name.slice(0, 2).toLowerCase() +
+        v.phone.slice(0, 2) +
+        new Date(v.dob).getFullYear();
+
+      return {
+        name: v.name,
+        phone: v.phone,
+        dob: v.dob,
+        password,
+        election: electionId,
+      };
+    });
+
+    // Insert all voters, skip duplicates
+    const saved = await Voter.insertMany(newVoters, { ordered: false });
+
+    res.status(201).json({
+      message: `${saved.length} voters added successfully.`,
+      voters: saved,
+    });
+  } catch (err) {
+    console.error(err);
+
+    if (err.writeErrors) {
+      return res.status(207).json({
+        message: `Some voters could not be added due to duplicates.`,
+        details: err.writeErrors.map(e => e.errmsg),
+      });
+    }
+
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+};
+
+module.exports = { adminLogin, createElection, addVoters, addCandidate, getLiveVotes, getResults, getAllElections, getElectionDetails, addVotersBulk };
 
