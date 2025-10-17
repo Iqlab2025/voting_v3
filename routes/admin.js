@@ -12,7 +12,9 @@ const {
     getResults,
     getAllElections,
     getElectionDetails,
-    addVotersBulk
+    addVotersBulk,
+    deleteVoter,
+    deleteCandidate
 } = require('../controllers/adminController');
 
 // Login route
@@ -24,11 +26,17 @@ router.use(adminAuth);
 // Elections
 router.post('/elections', createElection);
 
+// DELETE /api/admin/voters/:voterId
+router.delete('/voters/:voterId', deleteVoter);
+
+
 // Voters
 router.post('/voters', addVoters);
 
 // Candidates (with photo upload)
 router.post('/candidates', upload.single('photo'), addCandidate);
+// DELETE /api/admin/candidates/:candidateId
+router.delete('/candidates/:candidateId', deleteCandidate);
 
 // Live votes
 router.get('/votes/:electionId', getLiveVotes);

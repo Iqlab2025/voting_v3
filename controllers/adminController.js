@@ -20,6 +20,32 @@ module.exports = { adminLogin };
 
 
 
+
+
+const deleteVoter = async (req, res) => {
+    try {
+        const voterId = req.params.voterId;
+
+        // Validate ObjectId
+        if (!voterId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ message: "Invalid voter ID" });
+        }
+
+        const voter = await Voter.findByIdAndDelete(voterId);
+        if (!voter) return res.status(404).json({ message: "Voter not found" });
+
+        res.json({ message: "Voter deleted successfully", voter });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Error deleting voter", error: err.message });
+    }
+};
+
+module.exports = { deleteVoter };
+
+
+
+
 // Create election
 const createElection = async (req, res) => {
     const { name, startDate, endDate } = req.body;
@@ -73,8 +99,8 @@ const getElectionDetails = async (req, res) => {
     const election = await Election.findById(id);
     if (!election) return res.status(404).json({ message: "Election not found" });
 
-    const voters = await Voter.find({ election: id }).select("-__v -_id -election");
-    const candidates = await Candidate.find({ election: id }).select("-__v -_id -election");
+    const voters = await Voter.find({ election: id }).select("-__v  -election");
+    const candidates = await Candidate.find({ election: id }).select("-__v  -election");
 
     const now = new Date();
     let status = "upcoming";
@@ -245,5 +271,25 @@ const addVotersBulk = async (req, res) => {
   }
 };
 
-module.exports = { adminLogin, createElection, addVoters, addCandidate, getLiveVotes, getResults, getAllElections, getElectionDetails, addVotersBulk };
+// Delete candidate
+const deleteCandidate = async (req, res) => {
+    try {
+        const candidateId = req.params.candidateId;
+
+        // Validate ObjectId
+        if (!candidateId.match(/^[0-9a-fA-F]{24}$/)) {
+            return res.status(400).json({ message: "Invalid candidate ID" });
+        }
+
+        const candidate = await Candidate.findByIdAndDelete(candidateId);
+        if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+
+        res.json({ message: "Candidate deleted successfully", candidate });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Error deleting candidate", error: err.message });
+    }
+};
+
+module.exports = { adminLogin, createElection, addVoters, addCandidate, getLiveVotes, getResults, getAllElections, getElectionDetails, addVotersBulk, deleteVoter, deleteCandidate };
 
